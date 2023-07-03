@@ -25,11 +25,11 @@ def k_means_clustering(points, k):
 
 
 data = np.array([
-    [0, 0],
-    [100, 100],
+    [0, 0, 0],
+    [1, 1, 1],
 ])
 k = 2
 
 m, cost = k_means_clustering(data, k)
-print('SDP solver returned matrix: ', m)
-print('Objective function value: ', cost)
+print('SDP solver returned matrix: ', np.around(m,2))
+print('Objective function value: ', round(cost, 3))
