@@ -1,0 +1,2 @@
+Counterexample: A(0,0), B(1,1), C(1,2) --> gives objective of 1/3 when k-means optimal is 1/2.
+Also gives an incorrect matrix from the SDP.
