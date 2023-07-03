@@ -14,6 +14,7 @@ def k_means_clustering(points, k):
 
     constraints = [cp.sum(M, axis=0) == 1, cp.sum(M, axis=1) == 1]
     constraints += [cp.trace(M) == k]
+    constraints += [M >= 0]
     for i in range(n):
         constraints += [M[i, i] >= M[i, j] for j in range(n)]
         constraints += [M[i, i] >= M[j, i] for j in range(n)]
@@ -23,6 +24,7 @@ def k_means_clustering(points, k):
 
     return M.value, obj.value
 
+
 data = np.array([
     [0, 0],
     [1, 1],
@@ -31,7 +33,7 @@ data = np.array([
 k = 2
 
 m, cost = k_means_clustering(data, k)
-print('SDP solver returned matrix: \n', np.around(m,2))
+print('SDP solver returned matrix: \n', np.around(m, 2))
 print('Objective function value: ', round(cost, 3))
 
 
