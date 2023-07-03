@@ -10,7 +10,7 @@ def k_means_clustering(points, k):
 
     D = np.square(distance_matrix(points, points))
     M = cp.Variable((n, n), PSD=True)
-    obj = cp.Minimize(cp.trace(D.T @ M))
+    obj = cp.Minimize(0.5 * cp.trace(D.T @ M))
 
     constraints = [cp.sum(M, axis=0) == 1, cp.sum(M, axis=1) == 1]
     constraints += [cp.trace(M) == k]
