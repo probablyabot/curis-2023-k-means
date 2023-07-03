@@ -2,16 +2,17 @@ import numpy as np
 import cvxpy as cp
 from scipy.spatial import distance_matrix
 
+
+# Given n points and k, uses semi-definite programming to produce a solution
+# to the (relaxed) k-means clustering problem.
 def k_means_clustering(points, k):
     n = len(points)
-    d = len(points[0])
 
     D = np.square(distance_matrix(points, points))
-    M = cp.Variable((n, n), symmetric=True)
+    M = cp.Variable((n, n), PSD=True)
+    obj = cp.Minimize(cp.trace(D.T @ M))
 
-    obj = cp.Minimize(cp.sum(cp.multiply(D, M), axis=None))
-
-    constraints = [cp.sum(M, axis=0) == 1, cp.sum(M, axis=1) == 1, M >> 0]
+    constraints = [cp.sum(M, axis=0) == 1, cp.sum(M, axis=1) == 1]
     constraints += [cp.trace(M) == k]
     for i in range(n):
         constraints += [M[i, i] >= M[i, j] for j in range(n)]
@@ -22,9 +23,13 @@ def k_means_clustering(points, k):
 
     return M.value, obj.value
 
-points = np.array([[0,0], [100,100]])
+
+data = np.array([
+    [0, 0],
+    [100, 100],
+])
 k = 2
 
-m, cost = k_means_clustering(points, k)
+m, cost = k_means_clustering(data, k)
 print('SDP solver returned matrix: ', m)
 print('Objective function value: ', cost)
