@@ -27,9 +27,7 @@ def k_means_clustering(points, k):
 
 data = np.array([
     [0, 0],
-    [1, 1],
-    [1, 0],
-    [0, 1]
+    [100, 100],
 ])
 k = 2
 
