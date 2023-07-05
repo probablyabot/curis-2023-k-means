@@ -46,8 +46,9 @@ def sample_points_new(num_points):
     return points
 
 # Usage example
-num_points = 5
-data = np.concatenate((np.array(sample_points(num_points)), np.array(sample_points_new(num_points))))
+num_points = 20
+# data = np.concatenate((np.array(sample_points(num_points)), np.array(sample_points_new(num_points))))
+data = np.array(sample_points(num_points))
 
 # data = np.array([
 #     [0, 0],
