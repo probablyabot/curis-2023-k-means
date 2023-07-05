@@ -1,7 +1,8 @@
 import numpy as np
 import cvxpy as cp
 from scipy.spatial import distance_matrix
-
+import random
+import math
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
@@ -24,11 +25,34 @@ def k_means_clustering(points, k):
 
     return M.value, obj.value
 
+def sample_points(num_points):
+    points = []
+    for _ in range(num_points):
+        radius = math.sqrt(random.random())  # Generate random radius between 0 and 1
+        theta = random.uniform(0, 2*math.pi)  # Generate random angle between 0 and 2*pi
+        x = radius * math.cos(theta)
+        y = radius * math.sin(theta)
+        points.append((x, y))
+    return points
 
-data = np.array([
-    [0, 0],
-    [100, 100],
-])
+def sample_points_new(num_points):
+    points = []
+    for _ in range(num_points):
+        radius = math.sqrt(random.random())  # Generate random radius between 0 and 1
+        theta = random.uniform(0, 2*math.pi)  # Generate random angle between 0 and 2*pi
+        x = radius * math.cos(theta) + 100
+        y = radius * math.sin(theta) + 100
+        points.append((x, y))
+    return points
+
+# Usage example
+num_points = 5
+data = np.concatenate((np.array(sample_points(num_points)), np.array(sample_points_new(num_points))))
+
+# data = np.array([
+#     [0, 0],
+#     [100, 100],
+# ])
 k = 2
 
 m, cost = k_means_clustering(data, k)

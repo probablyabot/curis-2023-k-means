@@ -7,6 +7,20 @@ We get the following semi-definite matrix:
  [-0.  1.]]
 Objective function value: 0.0
 
+5 points sampled from unit circle at origin, 5 points from unit circle at (100,100) with k=2
+SDP solver returned matrix: 
+ [[ 0.2  0.2  0.2  0.2  0.2 -0.  -0.  -0.  -0.  -0. ]
+ [ 0.2  0.2  0.2  0.2  0.2 -0.  -0.  -0.  -0.  -0. ]
+ [ 0.2  0.2  0.2  0.2  0.2 -0.  -0.  -0.  -0.  -0. ]
+ [ 0.2  0.2  0.2  0.2  0.2 -0.  -0.  -0.  -0.  -0. ]
+ [ 0.2  0.2  0.2  0.2  0.2 -0.  -0.  -0.  -0.  -0. ]
+ [-0.  -0.  -0.  -0.  -0.   0.2  0.2  0.2  0.2  0.2]
+ [-0.  -0.  -0.  -0.  -0.   0.2  0.2  0.2  0.2  0.2]
+ [-0.  -0.  -0.  -0.  -0.   0.2  0.2  0.2  0.2  0.2]
+ [-0.  -0.  -0.  -0.  -0.   0.2  0.2  0.2  0.2  0.2]
+ [-0.  -0.  -0.  -0.  -0.   0.2  0.2  0.2  0.2  0.2]]
+Objective function value:  3.35
+
 
 
 Question about Example with k=2: 
