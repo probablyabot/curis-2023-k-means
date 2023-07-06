@@ -5,7 +5,7 @@ import random
 import math
 import gurobipy as gp
 from gurobipy import GRB
-
+from itertools import combinations
 
 
 # Given n points and k, uses semi-definite programming to produce a solution
@@ -33,13 +33,27 @@ def sdp_k_means(points, k):
 # Solves for the optimal k-means clustering by reducing to the discrete case and  using Gurobi's integer programming
 # solver. Note: Doesn't scale for large n.
 def optimal_k_means(points, k):
-    m = gp.Model("k-means")
+    m = gp.Model('k-means')
     n = len(points)
 
-    D = np.square(distance_matrix(points, points))
-    Z = m.addMVar(shape=(n,n), vtype=GRB.BINARY)
-    y = Z.sum(axis=0)
+    centroids = []
+    for c in range(1, n + 1):
+        for cluster in combinations(points, c):
+            centroids.append(np.mean(cluster, axis=0))
+    s = len(centroids)
+    
+    D = np.square(distance_matrix(points, centroids))
+    M = m.addMVar(shape=(n, s), vtype=GRB.BINARY)
+    Y = m.addMVar(shape=(s,), vtype=GRB.BINARY)
 
+    m.setObjective((D * M).sum(), GRB.MINIMIZE)
+
+    m.addConstrs(M[i].sum() >= 1 for i in range(n))
+    m.addConstrs((Y[j] >= M[i][j] for i in range(n) for j in range(s)))
+    m.addConstr(Y.sum() <= k, 'k clusters')
+    
+    m.optimize()
+    return m.ObjVal
 
 
 def sample_points(num_points):
@@ -71,16 +85,16 @@ num_points = 20
 data = np.array([
     [0, 0],
     [1, 0],
-    [1 + np.cos(2.*np.pi/5.), np.sin(2.*np.pi/5.)],
-    [0.5, 0.5 * np.tan(2.*np.pi/5.)],
-    [-np.cos(2.*np.pi/5.), np.sin(2.*np.pi/5.)]
+    [1, 1],
+    [0, 1]
 ])
 print(data)
 k = 2
 
 m, cost = sdp_k_means(data, k)
-opt =
+opt = optimal_k_means(data, k)
 print('SDP solver returned matrix: \n', np.around(m, 3))
-print('Objective function value: ', round(cost, 3))
+print('SDP objective function value: ', round(cost, 3))
+print('Optimal objective function value: ', round(opt, 3))
 
 
