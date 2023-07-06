@@ -3,10 +3,14 @@ import cvxpy as cp
 from scipy.spatial import distance_matrix
 import random
 import math
+import gurobipy as gp
+from gurobipy import GRB
+
+
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
-def k_means_clustering(points, k):
+def sdp_k_means(points, k):
     n = len(points)
 
     D = np.square(distance_matrix(points, points))
@@ -25,6 +29,19 @@ def k_means_clustering(points, k):
 
     return M.value, obj.value
 
+
+# Solves for the optimal k-means clustering by reducing to the discrete case and  using Gurobi's integer programming
+# solver. Note: Doesn't scale for large n.
+def optimal_k_means(points, k):
+    m = gp.Model("k-means")
+    n = len(points)
+
+    D = np.square(distance_matrix(points, points))
+    Z = m.addMVar(shape=(n,n), vtype=GRB.BINARY)
+    y = Z.sum(axis=0)
+
+
+
 def sample_points(num_points):
     points = []
     for _ in range(num_points):
@@ -34,6 +51,7 @@ def sample_points(num_points):
         y = radius * math.sin(theta)
         points.append((x, y))
     return points
+
 
 def sample_points_new(num_points):
     points = []
@@ -45,21 +63,24 @@ def sample_points_new(num_points):
         points.append((x, y))
     return points
 
-# Usage example
+
 num_points = 20
 # data = np.concatenate((np.array(sample_points(num_points)), np.array(sample_points_new(num_points))))
-data = np.array(sample_points(num_points))
+# data = np.array(sample_points(num_points))
 
-# data = np.array([
-#     [0, 0],
-#     [100, 100],
-# ])
+data = np.array([
+    [0, 0],
+    [1, 0],
+    [1 + np.cos(2.*np.pi/5.), np.sin(2.*np.pi/5.)],
+    [0.5, 0.5 * np.tan(2.*np.pi/5.)],
+    [-np.cos(2.*np.pi/5.), np.sin(2.*np.pi/5.)]
+])
+print(data)
 k = 2
 
-m, cost = k_means_clustering(data, k)
-# print('SDP solver returned matrix: \n', m)
-# print('Objective function value: ', cost)
-print('SDP solver returned matrix: \n', np.around(m, 2))
+m, cost = sdp_k_means(data, k)
+opt =
+print('SDP solver returned matrix: \n', np.around(m, 3))
 print('Objective function value: ', round(cost, 3))
 
 
