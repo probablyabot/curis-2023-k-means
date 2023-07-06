@@ -7,7 +7,6 @@ import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
 
-
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
 def sdp_k_means(points, k):
@@ -82,14 +81,29 @@ num_points = 20
 # data = np.concatenate((np.array(sample_points(num_points)), np.array(sample_points_new(num_points))))
 # data = np.array(sample_points(num_points))
 
-data = np.array([
-    [0, 0],
-    [1, 0],
-    [1, 1],
-    [0, 1]
-])
-print(data)
-k = 2
+def get_polygon_coordinates(n, radius=1):
+    coordinates = []
+    angle = 2 * math.pi / n  # Calculate the angle between each vertex
+    
+    for i in range(n):
+        x = radius * math.cos(i * angle)
+        y = radius * math.sin(i * angle)
+        coordinates.append((x, y))
+    
+    return coordinates
+
+# Example usage
+num_sides = 12  # Number of sides of the polygon
+polygon_radius = 1  # Radius of the polygon
+polygon_coordinates = get_polygon_coordinates(num_sides, polygon_radius)
+data = np.array(polygon_coordinates)
+# data = np.array([
+#     (0, 0, 0),
+#     (1, 0, 1),
+#     (0, 1, 1)
+# ])
+print(np.around(data, 3))
+k = 5
 
 m, cost = sdp_k_means(data, k)
 opt = optimal_k_means(data, k)
