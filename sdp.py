@@ -1,8 +1,7 @@
 import numpy as np
 import cvxpy as cp
+import numpy.random
 from scipy.spatial import distance_matrix
-import random
-import math
 import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
@@ -59,37 +58,39 @@ def optimal_k_means(points, k):
     return m.ObjVal
 
 
-def sample_points(num_points, cx=0, cy=0):
-    points = []
-    for _ in range(num_points):
-        radius = math.sqrt(random.random())  # Generate random radius between 0 and 1
-        theta = random.uniform(0, 2*math.pi)  # Generate random angle between 0 and 2*pi
-        x = cx + radius * math.cos(theta)
-        y = cy + radius * math.sin(theta)
-        points.append([x, y])
-    return np.array(points)
+# Samples `num_points` points from a d-dimensional ball with the given radius
+# and center, returning an array of shape (num_points, d).
+def sample_from_ball(num_points, d, radius=1, center=None):
+    rng = numpy.random.default_rng()
+    if center is None:
+        center = np.zeros(d)
+    if len(center) != d:
+        return -1
+    r = rng.random(num_points) ** (1/d)
+    theta = rng.normal(size=(d, num_points))
+    theta /= np.linalg.norm(theta, axis=0)
+    return center + radius * (theta * r).T
 
 
-# num_points = 20
-# data = np.concatenate((sample_points(num_points), sample_points(num_points, cx=100, cy=100)))
-# data = sample_points(num_points)
+num_points = 10
+data = sample_from_ball(num_points, d=4, radius=1)
 
 
+# Generate 2D coordinates for a regular n-gon inscribed in a circle of given
+# radius centered at the origin.
 def get_polygon_coordinates(n, radius=1):
     coordinates = []
-    angle = 2 * math.pi / n  # Calculate the angle between each vertex
+    theta = 2 * np.pi / n
 
     for i in range(n):
-        x = radius * math.cos(i * angle)
-        y = radius * math.sin(i * angle)
-        coordinates.append((x, y))
+        x = radius * np.cos(theta * i)
+        y = radius * np.sin(theta * i)
+        coordinates.append([x, y])
 
-    return coordinates
+    return np.array(coordinates)
 
 
-# Example usage
-polygon_coordinates = get_polygon_coordinates(15)
-data = np.array(polygon_coordinates)
+# data = get_polygon_coordinates(10, radius=1)
 
 # data = np.array([
 #     [0, 0],
@@ -97,7 +98,7 @@ data = np.array(polygon_coordinates)
 #     [0.5, np.sin(np.pi / 3.)]
 # ])
 print('Input data:\n', data)
-k = 4
+k = 2
 
 m, cost = sdp_k_means(data, k)
 opt = optimal_k_means(data, k)
