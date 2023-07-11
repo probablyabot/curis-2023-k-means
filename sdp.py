@@ -24,7 +24,7 @@ def sdp_k_means(points, k):
         constraints += [M[i, i] >= M[j, i] for j in range(n)]
 
     prob = cp.Problem(obj, constraints)
-    prob.solve(verbose=True)
+    prob.solve()
 
     return M.value, obj.value
 
@@ -73,7 +73,7 @@ def sample_from_ball(num_points, d=2, radius=1, center=None):
 
 num_points = 25
 data = sample_from_ball(num_points)
-data = np.concatenate([data, sample_from_ball(num_points, center=(100, 100))])
+data = np.concatenate([data, sample_from_ball(num_points, center=(50, 50))])
 
 
 # Generate 2D coordinates for a regular n-gon inscribed in a circle of given
