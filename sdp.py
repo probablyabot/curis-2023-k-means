@@ -1,10 +1,10 @@
 import numpy as np
 import cvxpy as cp
-import numpy.random
 from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
+from time import time
 
 
 # Given n points and k, uses semi-definite programming to produce a solution
@@ -24,17 +24,16 @@ def sdp_k_means(points, k):
         constraints += [M[i, i] >= M[j, i] for j in range(n)]
 
     prob = cp.Problem(obj, constraints)
-    prob.solve()
+    prob.solve(verbose=True)
 
     return M.value, obj.value
 
 
 # Solves for the optimal k-means clustering by reducing to the discrete case
 # and using Gurobi's integer programming solver. Note: Exponential running
-# time; doesn't scale for
-# large n.
+# time; doesn't scale for large n.
 def optimal_k_means(points, k):
-    m = gp.Model('k-means')
+    m = gp.Model()
     n = len(points)
 
     # Compute all 2^n - 2 possible centroids
@@ -60,8 +59,8 @@ def optimal_k_means(points, k):
 
 # Samples `num_points` points from a d-dimensional ball with the given radius
 # and center, returning an array of shape (num_points, d).
-def sample_from_ball(num_points, d, radius=1, center=None):
-    rng = numpy.random.default_rng()
+def sample_from_ball(num_points, d=2, radius=1, center=None):
+    rng = np.random.default_rng()
     if center is None:
         center = np.zeros(d)
     if len(center) != d:
@@ -72,8 +71,9 @@ def sample_from_ball(num_points, d, radius=1, center=None):
     return center + radius * (theta * r).T
 
 
-num_points = 10
-data = sample_from_ball(num_points, d=4, radius=1)
+num_points = 25
+data = sample_from_ball(num_points)
+data = np.concatenate([data, sample_from_ball(num_points, center=(100, 100))])
 
 
 # Generate 2D coordinates for a regular n-gon inscribed in a circle of given
@@ -90,7 +90,7 @@ def get_polygon_coordinates(n, radius=1):
     return np.array(coordinates)
 
 
-# data = get_polygon_coordinates(10, radius=1)
+# data = get_polygon_coordinates(5, radius=1)
 
 # data = np.array([
 #     [0, 0],
@@ -100,8 +100,12 @@ def get_polygon_coordinates(n, radius=1):
 print('Input data:\n', data)
 k = 2
 
+start_time = time()
 m, cost = sdp_k_means(data, k)
-opt = optimal_k_means(data, k)
 print('SDP solver returned matrix:\n', np.around(m, 3))
 print('SDP objective function value:', round(cost, 3))
-print('Optimal objective function value:', round(opt, 3))
+print('SDP running time:', time() - start_time, 'seconds')
+# start_time = time()
+# opt = optimal_k_means(data, k)
+# print('Optimal objective function value:', round(opt, 3))
+# print('Gurobi running time: ', time() - start_time)
