@@ -5,6 +5,8 @@ import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations
 from time import time
+import argparse
+from typing import Tuple
 
 
 # Given n points and k, uses semi-definite programming to produce a solution
@@ -59,26 +61,28 @@ def optimal_k_means(points, k):
 
 # Samples `num_points` points from a d-dimensional ball with the given radius
 # and center, returning an array of shape (num_points, d).
-def sample_from_ball(num_points, d=2, radius=1, center=None):
+def sample_from_ball(num_points, d, radius, center):
     rng = np.random.default_rng()
-    if center is None:
-        center = np.zeros(d)
-    if len(center) != d:
-        return -1
     r = rng.random(num_points) ** (1/d)
     theta = rng.normal(size=(d, num_points))
     theta /= np.linalg.norm(theta, axis=0)
     return center + radius * (theta * r).T
 
 
-num_points = 25
-data = sample_from_ball(num_points)
-data = np.concatenate([data, sample_from_ball(num_points, center=(50, 50))])
+def gen_clusters(num_clusters, points_per_cluster, d, radius, centers):
+    clusters = [sample_from_ball(points_per_cluster, d, radius, centers[i])
+                for i in range(num_clusters)]
+    return np.vstack(clusters)
+
+
+# num_points = 25
+# data = sample_from_ball(num_points)
+# data = np.concatenate([data, sample_from_ball(num_points, center=(100, 100))])
 
 
 # Generate 2D coordinates for a regular n-gon inscribed in a circle of given
 # radius centered at the origin.
-def get_polygon_coordinates(n, radius=1):
+def gen_polygon(n, radius=1):
     coordinates = []
     theta = 2 * np.pi / n
 
@@ -90,22 +94,51 @@ def get_polygon_coordinates(n, radius=1):
     return np.array(coordinates)
 
 
-# data = get_polygon_coordinates(5, radius=1)
-
 # data = np.array([
 #     [0, 0],
 #     [1, 0],
 #     [0.5, np.sin(np.pi / 3.)]
 # ])
-print('Input data:\n', data)
-k = 2
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--cluster', action='store_true')
+    parser.add_argument('-p', '--polygon', action='store_true')
+    parser.add_argument('-m', '--manual', action='store_true')
+    parser.add_argument('-nc', '--num_clusters', type=int, default=1)
+    parser.add_argument('-ppc', '--pts_per_cluster', type=int, default=10)
+    parser.add_argument('-d', '--dimension', type=int, default=2)
+    parser.add_argument('-r', '--radius', type=float, default=1.0)
+    parser.add_argument('-ns', '--num_sides', type=int, default=3)
+    parser.add_argument('-k', type=int, default=2)
 
-start_time = time()
-m, cost = sdp_k_means(data, k)
-print('SDP solver returned matrix:\n', np.around(m, 3))
-print('SDP objective function value:', round(cost, 3))
-print('SDP running time:', time() - start_time, 'seconds')
-# start_time = time()
-# opt = optimal_k_means(data, k)
-# print('Optimal objective function value:', round(opt, 3))
-# print('Gurobi running time: ', time() - start_time)
+    args = parser.parse_args()
+    if args.cluster:
+        centers = []
+        for i in range(args.num_clusters):
+            center_raw = input(f'Cluster center #{i}: ').replace('(', '').replace(')', '')
+            centers.append([float(x) for x in center_raw.split(',')])
+        data = gen_clusters(args.num_clusters, args.pts_per_cluster,
+                            args.dimension, args.radius, centers)
+    elif args.polygon:
+        data = gen_polygon(args.num_sides, args.radius)
+    else:
+        pts = []
+        while True:
+            pt = input(f'Data point #{len(pts)+1} (return to stop): ').replace('(', '').replace(')', '')
+            if pt == '':
+                break
+            pts.append([float(x) for x in pt.split(',')])
+        data = np.array(pts)
+    k = args.k
+    print('Input data:\n', data)
+
+    start_t = time()
+    m, cost = sdp_k_means(data, k)
+    sdp_t = time()
+    opt = optimal_k_means(data, k)
+    opt_t = time()
+    print('SDP solver returned matrix:\n', np.around(m, 3))
+    print('SDP objective function value:', round(cost, 3))
+    print(f'SDP running time: {sdp_t - start_t} seconds')
+    print('Optimal objective function value:', round(opt, 3))
+    print(f'Gurobi running time: {opt_t - sdp_t} seconds')
