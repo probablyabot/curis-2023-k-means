@@ -75,11 +75,6 @@ def gen_clusters(num_clusters, points_per_cluster, d, radius, centers):
     return np.vstack(clusters)
 
 
-# num_points = 25
-# data = sample_from_ball(num_points)
-# data = np.concatenate([data, sample_from_ball(num_points, center=(100, 100))])
-
-
 # Generate 2D coordinates for a regular n-gon inscribed in a circle of given
 # radius centered at the origin.
 def gen_polygon(n, radius=1):
@@ -110,13 +105,19 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--radius', type=float, default=1.0)
     parser.add_argument('-ns', '--num_sides', type=int, default=3)
     parser.add_argument('-k', type=int, default=2)
+    parser.add_argument('-ng', '--no_gurobi', action='store_true')
 
     args = parser.parse_args()
     if args.cluster:
         centers = []
         for i in range(args.num_clusters):
-            center_raw = input(f'Cluster center #{i}: ').replace('(', '').replace(')', '')
-            centers.append([float(x) for x in center_raw.split(',')])
+            center = []
+            while len(center) == 0:
+                center_raw = input(f'Cluster center #{i}: ').replace('(', '').replace(')', '')
+                center = [float(x) for x in center_raw.split(',')]
+                if len(center) != args.dimension:
+                    center = []
+            centers.append(center)
         data = gen_clusters(args.num_clusters, args.pts_per_cluster,
                             args.dimension, args.radius, centers)
     elif args.polygon:
@@ -135,10 +136,12 @@ if __name__ == '__main__':
     start_t = time()
     m, cost = sdp_k_means(data, k)
     sdp_t = time()
-    opt = optimal_k_means(data, k)
-    opt_t = time()
+    if not args.no_gurobi:
+        opt = optimal_k_means(data, k)
+        opt_t = time()
     print('SDP solver returned matrix:\n', np.around(m, 3))
     print('SDP objective function value:', round(cost, 3))
     print(f'SDP running time: {sdp_t - start_t} seconds')
-    print('Optimal objective function value:', round(opt, 3))
-    print(f'Gurobi running time: {opt_t - sdp_t} seconds')
+    if not args.no_gurobi:
+        print('Optimal objective function value:', round(opt, 3))
+        print(f'Gurobi running time: {opt_t - sdp_t} seconds')
