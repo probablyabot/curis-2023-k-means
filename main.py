@@ -12,7 +12,7 @@ def get_data(args):
                                 args.dimension, args.radius, centers)
         else:
             # TODO: add support for multiple polygons with different centers
-            data = gen_polygon(args.num_sides, args.radius, centers[0][0], centers[0][1])
+            data = gen_polygon(args.num_points, args.radius, centers[0][0], centers[0][1])
     else:
         data = np.array([parse_point(f'Data point #{i + 1}: ', args.dimension)
                          for i in range(args.num_points)])
@@ -27,8 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('-ppc', '--pts_per_cluster', type=int, default=10)
     parser.add_argument('-d', '--dimension', type=int, default=2)
     parser.add_argument('-r', '--radius', type=float, default=1.0)
-    parser.add_argument('-ns', '--num_sides', type=int, default=3)
-    parser.add_argument('-np', '--num_points', type=int, default=2)
+    parser.add_argument('-np', '--num_points', type=int, default=3)
     parser.add_argument('-k', type=int, default=2)
     parser.add_argument('-ng', '--no_gurobi', action='store_true')
 
@@ -47,5 +46,5 @@ if __name__ == '__main__':
         print(f'Gurobi running time: {opt_t - sdp_t} seconds')
     print('SDP objective function value:', round(cost, 3))
     print('SDP solver returned matrix:\n', np.around(m, 3))
-    print('Trace:\n', np.trace(m))
+    print('Trace:\n', np.round(np.trace(m), 3))
     print(f'SDP running time: {sdp_t - start_t} seconds')
