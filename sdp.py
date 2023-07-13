@@ -75,7 +75,7 @@ def gen_clusters(num_clusters, points_per_cluster, d, radius, centers):
 
 # Generate 2D coordinates for a regular n-gon inscribed in a circle of given
 # radius centered at (cx, cy).
-def gen_polygon(n, radius=1, cx=0, cy=0):
+def gen_polygon(n, radius, cx, cy):
     coordinates = []
     theta = 2 * np.pi / n
 
@@ -87,11 +87,19 @@ def gen_polygon(n, radius=1, cx=0, cy=0):
     return (cx, cy) + np.array(coordinates)
 
 
-# Read in a d-dimension point from input and parse it into a Tuple[float] of
-# length d.
+def gen_polygon_clusters(num_clusters, n, radius, centers):
+    polygons = [gen_polygon(n, radius, *centers[i]) for i in range(num_clusters)]
+    return np.vstack(polygons)
+
+
+# Read in a d-dimension point from input and parse it into a list of floats.
+# If no input is provided, use the origin.
 def parse_point(prompt, expected_d):
+    print('Press return for origin.')
     while True:
         pt_raw = input(prompt).strip('()')
+        if pt_raw == '':
+            return [0.0] * expected_d
         pt = [float(x) for x in pt_raw.split(',')]
         if len(pt) == expected_d:
             return pt
