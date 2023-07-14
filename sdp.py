@@ -9,7 +9,7 @@ from itertools import combinations
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
 def sdp_k_means(points, k):
-    n = len(points)
+    n = points.shape[0]
 
     D = np.square(distance_matrix(points, points))
     M = cp.Variable((n, n), PSD=True)
@@ -32,16 +32,20 @@ def sdp_k_means(points, k):
 # and using Gurobi's integer programming solver. Note: Exponential running
 # time; doesn't scale for large n.
 def optimal_k_means(points, k):
-    m = gp.Model()
-    n = len(points)
+    env = gp.Env(empty=True)
+    env.setParam('OutputFlag', 0)
+    env.start()
 
-    # Compute all 2^n - 2 possible centroids
+    m = gp.Model(env=env)
+    n = points.shape[0]
+
+    # Compute all 2^n - 1 possible centroids
     centroids = []
-    for c in range(1, n):
+    for c in range(1, n + 1):
         for cluster in combinations(points, c):
             centroids.append(np.mean(cluster, axis=0))
     s = len(centroids)
-    
+
     D = np.square(distance_matrix(points, centroids))
     M = m.addMVar(shape=(n, s), vtype=GRB.BINARY)
     Y = m.addMVar(shape=(s,), vtype=GRB.BINARY)
@@ -51,9 +55,20 @@ def optimal_k_means(points, k):
     m.addConstrs(M[i].sum() >= 1 for i in range(n))
     m.addConstrs((Y[j] >= M[i][j] for i in range(n) for j in range(s)))
     m.addConstr(Y.sum() <= k, '')
-    
+
     m.optimize()
     return m.ObjVal
+
+
+# Calculate optimal objective value by taking blocks of size `ppc` and adding
+# objective values separately. (Should only be used on instances where
+# clusters are sufficiently well-separated.)
+def optimal_separate(points, k, ppc):
+    nc = points.shape[0] // ppc
+    obj = 0
+    for i in range(nc):
+        obj += optimal_k_means(points[i*ppc:(i+1)*ppc], 1)
+    return obj
 
 
 # Samples `num_points` points from a d-dimensional ball with the given radius
