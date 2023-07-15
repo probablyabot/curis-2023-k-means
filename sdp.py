@@ -103,7 +103,8 @@ def gen_polygon(n, radius, cx, cy):
 
 
 def gen_polygon_clusters(num_clusters, n, radius, centers):
-    polygons = [gen_polygon(n, radius, *centers[i]) for i in range(num_clusters)]
+    polygons = [gen_polygon(n, radius, *centers[i])
+                for i in range(num_clusters)]
     return np.vstack(polygons)
 
 
