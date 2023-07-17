@@ -40,6 +40,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     data = get_data(args)
+    data = gen_clique_embeddings(5, 4)
     k = args.k
     if args.verbose:
         print('Input data:\n', np.around(data, 3))
@@ -58,9 +59,9 @@ if __name__ == '__main__':
             opt = optimal_k_means(data, k)
         opt_t = time()
         print('Optimal objective function value:', round(opt, 3))
-        print(f'Gurobi running time: {opt_t - sdp_t} seconds')
+        print(f'Gurobi running time: {round(opt_t - sdp_t, 3)} seconds')
     print('SDP objective function value:', round(cost, 3))
     if args.verbose:
         print('SDP solver returned matrix:\n', np.around(m, 3))
         print('Trace:\n', np.around(np.trace(m), 3))
-    print(f'SDP running time: {sdp_t - start_t} seconds')
+    print(f'SDP running time: {round(sdp_t - start_t, 3)} seconds')

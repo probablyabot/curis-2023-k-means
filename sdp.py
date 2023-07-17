@@ -3,7 +3,7 @@ import cvxpy as cp
 from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
-from itertools import combinations
+from itertools import combinations, permutations
 
 
 # Given n points and k, uses semi-definite programming to produce a solution
@@ -106,6 +106,11 @@ def gen_polygon_clusters(num_clusters, n, radius, centers):
     polygons = [gen_polygon(n, radius, *centers[i])
                 for i in range(num_clusters)]
     return np.vstack(polygons)
+
+
+def gen_clique_embeddings(n, k):
+    numbers = [0] * (n - k) + [1] * k
+    return np.vstack(list(set(permutations(numbers, n))))
 
 
 # Read in a d-dimension point from input and parse it into a list of floats.
