@@ -8,15 +8,15 @@ from itertools import combinations, permutations
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
-def sdp_k_means(points, k):
+def sdp_k_means(points, k, psd=True):
     n = points.shape[0]
 
     D = np.square(distance_matrix(points, points))
-    M = cp.Variable((n, n), PSD=True)
+    M = cp.Variable((n, n), PSD=psd)
     obj = cp.Minimize(0.5 * cp.trace(D.T @ M))
 
-    constraints = [cp.sum(M, axis=0) == 1, cp.sum(M, axis=1) == 1]
-    constraints += [cp.trace(M) == k]
+    constraints = [cp.sum(M, axis=0) >= 1]
+    constraints += [cp.trace(M) <= k]
     constraints += [M >= 0]
     for i in range(n):
         constraints += [M[i, i] >= M[i, j] for j in range(n)]
@@ -31,7 +31,7 @@ def sdp_k_means(points, k):
 # Solves for the optimal k-means clustering by reducing to the discrete case
 # and using Gurobi's integer programming solver. Note: Exponential running
 # time; doesn't scale for large n.
-def optimal_k_means(points, k):
+def optimal_k_means(points, k, centroids=None):
     env = gp.Env(empty=True)
     env.setParam('OutputFlag', 0)
     env.start()
@@ -40,10 +40,11 @@ def optimal_k_means(points, k):
     n = points.shape[0]
 
     # Compute all 2^n - 1 possible centroids
-    centroids = []
-    for c in range(1, n + 1):
-        for cluster in combinations(points, c):
-            centroids.append(np.mean(cluster, axis=0))
+    if centroids is None:
+        centroids = []
+        for c in range(1, n + 1):
+            for cluster in combinations(points, c):
+                centroids.append(np.mean(cluster, axis=0))
     s = len(centroids)
 
     D = np.square(distance_matrix(points, centroids))
@@ -58,17 +59,6 @@ def optimal_k_means(points, k):
 
     m.optimize()
     return m.ObjVal
-
-
-# Calculate optimal objective value by taking blocks of size `ppc` and adding
-# objective values separately. (Should only be used on instances where
-# clusters are sufficiently well-separated.)
-def optimal_separate(points, k, ppc):
-    nc = points.shape[0] // ppc
-    obj = 0
-    for i in range(nc):
-        obj += optimal_k_means(points[i*ppc:(i+1)*ppc], 1)
-    return obj
 
 
 # Samples `num_points` points from a d-dimensional ball with the given radius
@@ -125,3 +115,34 @@ def parse_point(prompt, expected_d):
         if len(pt) == expected_d:
             return pt
         print(f'Invalid point, expected dimension {expected_d}')
+
+
+# Calculates optimal objective value for regular n-gon by taking consecutive
+# points as clusters.
+def optimal_polygon(n, radius, k):
+    pts = gen_polygon(n, radius, 0, 0)
+    clusters = [pts[i*n//k:(i+1)*n//k] for i in range(k)]
+    centroids = np.array([np.mean(clusters[i], axis=0) for i in range(k)])
+    return np.sum([np.sum((clusters[i] - centroids[i]) ** 2) for i in range(k)])
+
+
+# Construct an optimal solution to the LP for a regular n-gon and return the
+# objective value.
+def construct_lp(points, k):
+    n = points.shape[0]
+    D = np.square(distance_matrix(points, points))
+    m = n // k
+    a, b = (m + 1) // 2, (m - 1) // 2
+    extra = (1 - k / n * (a + b)) / 2
+    row = [k / n] * a + [extra] + [0] * (n - a - b - 2) + [extra] + [k / n] * b
+    M = np.array([np.roll(row, i) for i in range(n)])
+    return np.trace(D.T @ M) / 2
+
+
+for i in range(3, 8):
+    n = 2 * i - 1
+    points = gen_polygon(n, 1, 0, 0)
+    # print(f'ratio for {n}:', optimal_polygon(n, 1, 3), construct_lp(points, 3))
+    # print(f'ratio for {n}:', optimal_polygon(n, 1, 3) / sdp_k_means(points, 3)[1])
+    print(f'optimal LP solution for n={n}:', sdp_k_means(points, 3, psd=False)[1])
+    print(f'constructed LP solution for n={n}:', construct_lp(points, 3))
