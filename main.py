@@ -37,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-ng', '--no_gurobi', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-lp', action='store_true')
+    parser.add_argument('-tri', action='store_true')
 
     args = parser.parse_args()
     data = get_data(args)
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         plt.show()
 
     start_t = time()
-    m, cost = sdp_k_means(data, k, not args.lp)
+    m, cost, duals = sdp_k_means(data, k, not args.lp, args.tri)
     sdp_t = time()
     if not args.no_gurobi:
         if args.polygon and args.num_clusters == 1:
@@ -64,4 +65,6 @@ if __name__ == '__main__':
     if args.verbose:
         print('SDP solver returned matrix:\n', np.around(m, 3))
         print('Trace:\n', np.around(np.trace(m), 3))
+        for d in duals:
+            print('Dual variables:', np.around(d, 3))
     print(f'SDP running time: {round(sdp_t - start_t, 3)} seconds')

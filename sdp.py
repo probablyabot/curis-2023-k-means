@@ -8,7 +8,7 @@ from itertools import combinations, permutations
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
-def sdp_k_means(points, k, psd=True):
+def sdp_k_means(points, k, psd=True, tri=False):
     n = points.shape[0]
 
     D = np.square(distance_matrix(points, points))
@@ -18,6 +18,11 @@ def sdp_k_means(points, k, psd=True):
     constraints = [cp.sum(M, axis=0) >= 1]
     constraints += [cp.trace(M) <= k]
     constraints += [M >= 0]
+    if tri:
+        for i in range(n):
+            for j in range(n):
+                for k in range(n):
+                    constraints += [M[j, j] + M[i,k] >= M[i, j] + M[j, k]]
     for i in range(n):
         constraints += [M[i, i] >= M[i, j] for j in range(n)]
         constraints += [M[i, i] >= M[j, i] for j in range(n)]
@@ -25,7 +30,7 @@ def sdp_k_means(points, k, psd=True):
     prob = cp.Problem(obj, constraints)
     prob.solve()
 
-    return M.value, obj.value
+    return M.value, obj.value, [c.dual_value for c in constraints]
 
 
 # Solves for the optimal k-means clustering by reducing to the discrete case
@@ -139,10 +144,10 @@ def construct_lp(points, k):
     return np.trace(D.T @ M) / 2
 
 
-for i in range(3, 8):
-    n = 2 * i - 1
-    points = gen_polygon(n, 1, 0, 0)
-    # print(f'ratio for {n}:', optimal_polygon(n, 1, 3), construct_lp(points, 3))
-    # print(f'ratio for {n}:', optimal_polygon(n, 1, 3) / sdp_k_means(points, 3)[1])
-    print(f'optimal LP solution for n={n}:', sdp_k_means(points, 3, psd=False)[1])
-    print(f'constructed LP solution for n={n}:', construct_lp(points, 3))
+# for i in range(3, 8):
+#     n = 2 ** i
+#     points = gen_polygon(n, 1, 0, 0)
+    # print(f'ratio for {n}:', optimal_polygon(n, 1, 2) / construct_lp(points, 2))
+    # print(f'ratio for {n}:', optimal_polygon(n, 1, 3) / sdp_k_means(points, 3, psd=False, tri=True)[1])
+    # print(f'optimal LP solution for n={n}:', sdp_k_means(points, 3, psd=False)[1])
+    # print(f'constructed LP solution for n={n}:', construct_lp(points, 3))
