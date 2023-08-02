@@ -54,17 +54,17 @@ if __name__ == '__main__':
     m, cost, duals = sdp_k_means(data, k, not args.lp, args.tri)
     sdp_t = time()
     if not args.no_gurobi:
-        if args.polygon and args.num_clusters == 1:
-            opt = optimal_polygon(data.shape[0], args.radius, k)
+        if args.polygon:
+            opt = optimal_polygon(data, args.pts_per_cluster, k)
         else:
             opt = optimal_k_means(data, k)
         opt_t = time()
-        print('Optimal objective function value:', round(opt, 3))
-        print(f'Gurobi running time: {round(opt_t - sdp_t, 3)} seconds')
-    print('SDP objective function value:', round(cost, 3))
+        print('Integer solution cost:', round(opt, 3))
+        print(f'Integer solution running time: {round(opt_t - sdp_t, 3)} seconds')
+    print('SDP solution cost:', round(cost, 3))
     if args.verbose:
         print('SDP solver returned matrix:\n', np.around(m, 3))
         print('Trace:\n', np.around(np.trace(m), 3))
-        for d in duals:
-            print('Dual variables:', np.around(d, 3))
+        # for d in duals:
+        #     print('Dual variables:', np.around(d, 3))
     print(f'SDP running time: {round(sdp_t - start_t, 3)} seconds')

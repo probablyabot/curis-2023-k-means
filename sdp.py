@@ -122,13 +122,17 @@ def parse_point(prompt, expected_d):
         print(f'Invalid point, expected dimension {expected_d}')
 
 
-# Calculates optimal objective value for regular n-gon by taking consecutive
-# points as clusters.
-def optimal_polygon(n, radius, k):
-    pts = gen_polygon(n, radius, 0, 0)
-    clusters = [pts[i*n//k:(i+1)*n//k] for i in range(k)]
-    centroids = np.array([np.mean(clusters[i], axis=0) for i in range(k)])
-    return np.sum([np.sum((clusters[i] - centroids[i]) ** 2) for i in range(k)])
+# Calculates optimal objective value for well-separated regular n-gons by
+# taking consecutive points as clusters.
+def optimal_polygon(points, n, k):
+    nc = points.shape[0] // n
+    obj = 0
+    for i in range(nc):
+        ki = (i + 1) * k // nc - i * k // nc
+        clusters = [points[i*n+j*n//ki:i*n+(j+1)*n//ki] for j in range(ki)]
+        centroids = np.array([np.mean(clusters[j], axis=0) for j in range(ki)])
+        obj += np.sum([np.sum((clusters[i] - centroids[i]) ** 2) for i in range(ki)])
+    return obj
 
 
 # Construct an optimal solution to the LP for a regular n-gon and return the
