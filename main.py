@@ -61,6 +61,7 @@ if __name__ == '__main__':
         opt_t = time()
         print('Integer solution cost:', round(opt, 3))
         print(f'Integer solution running time: {round(opt_t - sdp_t, 3)} seconds')
+        print(f'Ratio:', round(opt / cost, 3))
     print('SDP solution cost:', round(cost, 3))
     if args.verbose:
         print('SDP solver returned matrix:\n', np.around(m, 3))
