@@ -22,10 +22,9 @@ def sdp_k_means(points, k, psd=True, tri=False):
         for i in range(n):
             for j in range(n):
                 for k in range(n):
-                    constraints += [M[j, j] + M[i,k] >= M[i, j] + M[j, k]]
+                    constraints += [M[j, j] + M[i, k] >= M[i, j] + M[j, k]]
     for i in range(n):
         constraints += [M[i, i] >= M[i, j] for j in range(n)]
-        constraints += [M[i, i] >= M[j, i] for j in range(n)]
 
     prob = cp.Problem(obj, constraints)
     prob.solve()
@@ -59,7 +58,7 @@ def optimal_k_means(points, k, centroids=None):
     m.setObjective((D * M).sum(), GRB.MINIMIZE)
 
     m.addConstrs(M[i].sum() >= 1 for i in range(n))
-    m.addConstrs((Y[j] >= M[i][j] for i in range(n) for j in range(s)))
+    m.addConstrs(Y[j] >= M[i][j] for i in range(n) for j in range(s))
     m.addConstr(Y.sum() <= k, '')
 
     m.optimize()
@@ -116,6 +115,8 @@ def parse_point(prompt, expected_d):
         pt_raw = input(prompt).strip('()')
         if pt_raw == '':
             return [0.0] * expected_d
+        if ',' not in pt_raw:
+            return [float(pt_raw)] * expected_d
         pt = [float(x) for x in pt_raw.split(',')]
         if len(pt) == expected_d:
             return pt
@@ -146,6 +147,48 @@ def construct_lp(points, k):
     row = [k / n] * a + [extra] + [0] * (n - a - b - 2) + [extra] + [k / n] * b
     M = np.array([np.roll(row, i) for i in range(n)])
     return np.trace(D.T @ M) / 2
+
+
+def gen_simplex(n, center, size=1):
+    pts = []
+    for i in range(n):
+        pts.append([0] * i + [size] + [0] * (n - i - 1))
+    return center + np.array(pts)
+
+
+def gen_simplex_clusters(num_clusters, n, centers, size=1):
+    simplices = [gen_simplex(n, centers[i], size) for i in range(num_clusters)]
+    return np.vstack(simplices)
+
+
+def optimal_simplex(points, n, k):
+    nc = points.shape[0] // n
+    obj = 0
+    for i in range(nc):
+        ki = (i + 1) * k // nc - i * k // nc
+        clusters = [points[i*n+j*n//ki:i*n+(j+1)*n//ki] for j in range(ki)]
+        centroids = np.array([np.mean(clusters[j], axis=0) for j in range(ki)])
+        obj += np.sum([np.sum((clusters[i] - centroids[i]) ** 2) for i in range(ki)])
+    return obj
+
+
+def lagrangian_polygon_cost(n):
+    pts = gen_polygon(n, n / (2 * np.pi), 0, 0)
+    k = int(6 ** (-1/3) * n ** (2/3))
+    c = optimal_polygon(pts, n, k)
+    return c + n * k
+
+
+def test():
+    for e in range(10, 20):
+        n = 2 ** e
+        print('dual cost:', n ** 2)
+        lagrange = lagrangian_polygon_cost(n)
+        print('UFL cost:', lagrange)
+        print('ratio:', n ** 2 / lagrange)
+
+
+test()
 
 
 # for i in range(3, 8):

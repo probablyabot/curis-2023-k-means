@@ -14,6 +14,9 @@ def get_data(args):
         if args.polygon:
             data = gen_polygon_clusters(args.num_clusters, args.pts_per_cluster,
                                         args.radius, centers)
+        elif args.simplex:
+            data = gen_simplex_clusters(args.num_clusters, args.pts_per_cluster,
+                                        centers)
         else:
             data = gen_clusters(args.num_clusters, args.pts_per_cluster,
                                 args.dimension, args.radius, centers)
@@ -29,6 +32,7 @@ if __name__ == '__main__':
     # For use cases 1 and 2, centers are given via user input.
     parser.add_argument('-m', '--manual', action='store_true')
     parser.add_argument('-p', '--polygon', action='store_true')
+    parser.add_argument('-s', '--simplex', action='store_true')
     parser.add_argument('-nc', '--num_clusters', type=int, default=1)
     parser.add_argument('-ppc', '--pts_per_cluster', type=int, default=3)
     parser.add_argument('-k', type=int)
@@ -51,14 +55,20 @@ if __name__ == '__main__':
         plt.show()
 
     start_t = time()
+    print('Running LP solver...')
     m, cost, duals = sdp_k_means(data, k, not args.lp, args.tri)
     sdp_t = time()
+    print('LP solver finished.')
     if not args.no_gurobi:
+        print('Finding integer solution...')
         if args.polygon:
             opt = optimal_polygon(data, args.pts_per_cluster, k)
+        elif args.simplex:
+            opt = optimal_simplex(data, args.pts_per_cluster, k)
         else:
             opt = optimal_k_means(data, k)
         opt_t = time()
+        print('Integer solution found.')
         print('Integer solution cost:', round(opt, 3))
         print(f'Integer solution running time: {round(opt_t - sdp_t, 3)} seconds')
         print(f'Ratio:', round(opt / cost, 3))
