@@ -8,23 +8,26 @@ from itertools import combinations, permutations
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
-def sdp_k_means(points, k, psd=True, tri=False):
+def sdp_k_means(points, k, psd=True, tri=False, l=0.0):
     n = points.shape[0]
 
     D = np.square(distance_matrix(points, points))
     M = cp.Variable((n, n), PSD=psd)
-    obj = cp.Minimize(0.5 * cp.trace(D.T @ M))
+    if l:
+        obj = cp.Minimize(cp.trace(D.T @ M) / 2 + l * cp.trace(M))
+    else:
+        obj = cp.Minimize(0.5 * cp.trace(D.T @ M))
 
     constraints = [cp.sum(M, axis=0) >= 1]
-    constraints += [cp.trace(M) <= k]
-    constraints += [M >= 0]
-    if tri:
-        for i in range(n):
-            for j in range(n):
-                for k in range(n):
-                    constraints += [M[j, j] + M[i, k] >= M[i, j] + M[j, k]]
     for i in range(n):
-        constraints += [M[i, i] >= M[i, j] for j in range(n)]
+        constraints.append(M[i, i] >= M[i])
+    if k:
+        constraints += [cp.trace(M) <= k]
+    if tri:
+        for i, j, m in combinations(range(n), 3):
+            for pi, pj, pm in [(i, j, m), (j, m, i), (m, i, j)]:
+                constraints += [M[pj, pj] + M[pi, pm] >= M[pi, pj] + M[pj, pm]]
+    constraints += [M >= 0]
 
     prob = cp.Problem(obj, constraints)
     prob.solve()
@@ -179,17 +182,66 @@ def lagrangian_polygon_cost(n):
     return c + n * k
 
 
-def test():
-    for e in range(10, 20):
-        n = 2 ** e
-        print('dual cost:', n ** 2)
-        lagrange = lagrangian_polygon_cost(n)
-        print('UFL cost:', lagrange)
-        print('ratio:', n ** 2 / lagrange)
+def test(n):
+    # print('dual cost:', n ** 2)
+    lagrange = lagrangian_polygon_cost(n)
+    print('UFL cost:', lagrange)
+    print('optimal primal lp cost:', 2 * n)
+    # print('dual/UFL ratio:', n ** 2 / lagrange)
+    print('UFL/primal ratio:', lagrange / (2 * n))
 
 
-test()
+def polygon_dual(n):
+    pts = gen_polygon(n, n / (2 * np.pi), 0, 0)
 
+    a = cp.Variable()
+    b = cp.Variable((n, n))
+    d = [cp.Variable((n, n)) for _ in range(n)]
+
+    constraints = [b >= 0]
+    constraints += [cp.diag(b) == 0]
+    constraints += [d[i] >= 0 for i in range(n)]
+    for i in range(n):
+        constraints += [cp.diag(d[i]) == 0]
+        constraints += [d[i][i] == 0]
+        constraints += [d[i][:, i] == 0]
+    for i in range(n):
+        constraints.append(a + cp.sum(b[i]) + cp.sum(d[i]) <= n)
+    for i in range(n-1):
+        for j in range(i+1, n):
+            constraints.append(b[j][i] == 0)
+            c = 2 * a - 2 * b[i][j]
+            for k in range(n):
+                if k != i and k != j:
+                    c += d[k][i][j]
+                    constraints.append(d[k][j][i] == 0)
+                    k1, k2 = sorted([i, k])
+                    c -= d[j][k1][k2]
+                    constraints.append(d[j][k2][k1] == 0)
+                    k1, k2 = sorted([j, k])
+                    c -= d[i][k1][k2]
+                    constraints.append(d[i][k2][k1] == 0)
+            constraints.append(c <= np.linalg.norm(pts[i] - pts[j]) ** 2)
+
+    prob = cp.Problem(cp.Maximize(a), constraints)
+    prob.solve()
+
+    return a.value, b.value, [d[i].value for i in range(n)]
+
+
+n = 12
+a, b, d = polygon_dual(n)
+print('alpha:', np.round(a, 3))
+print('beta:')
+print(np.round(b, 3))
+for i in range(n):
+    print(f'delta[{i}]:')
+    print(np.round(d[i], 3))
+
+
+# for e in range(4, 10):
+#     n = 2 ** e
+#     test(n)
 
 # for i in range(3, 8):
 #     n = 2 ** i

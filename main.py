@@ -35,18 +35,20 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--simplex', action='store_true')
     parser.add_argument('-nc', '--num_clusters', type=int, default=1)
     parser.add_argument('-ppc', '--pts_per_cluster', type=int, default=3)
-    parser.add_argument('-k', type=int)
+    parser.add_argument('-k', type=int, default=0)
     parser.add_argument('-d', '--dimension', type=int, default=2)
     parser.add_argument('-r', '--radius', type=float, default=1.0)
     parser.add_argument('-ng', '--no_gurobi', action='store_true')
     parser.add_argument('-v', '--verbose', action='store_true')
     parser.add_argument('-lp', action='store_true')
     parser.add_argument('-tri', action='store_true')
+    parser.add_argument('-l', type=float, default=0.0)
 
     args = parser.parse_args()
     data = get_data(args)
     # data = gen_clique_embeddings(6, 4)
     k = args.k
+    l = args.l
     if args.verbose:
         print('Input data:\n', np.around(data, 3))
         # TODO: create separate plotting function, highlight clusters and centers
@@ -56,7 +58,7 @@ if __name__ == '__main__':
 
     start_t = time()
     print('Running LP solver...')
-    m, cost, duals = sdp_k_means(data, k, not args.lp, args.tri)
+    m, cost, duals = sdp_k_means(data, k, not args.lp, args.tri, l)
     sdp_t = time()
     print('LP solver finished.')
     if not args.no_gurobi:
@@ -76,6 +78,18 @@ if __name__ == '__main__':
     if args.verbose:
         print('SDP solver returned matrix:\n', np.around(m, 3))
         print('Trace:\n', np.around(np.trace(m), 3))
-        # for d in duals:
-        #     print('Dual variables:', np.around(d, 3))
+        n = data.shape[0]
+        ct = 0
+        for d in duals:
+            enum = []
+            if args.tri:
+                for i, j, m in combinations(range(n), 3):
+                    for pi, pj, pm in [(i, j, m), (j, m, i), (m, i, j)]:
+                        enum.append((pi, pj, pm))
+            if type(d) is float:
+                if np.round(d, 3) != 0.0:
+                    print(f'delta_{enum[ct]}:', np.round(d, 3))
+                ct += 1
+            else:
+                print('Dual variables:', np.around(d, 3))
     print(f'SDP running time: {round(sdp_t - start_t, 3)} seconds')
