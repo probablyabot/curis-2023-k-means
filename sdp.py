@@ -4,7 +4,7 @@ from scipy.spatial import distance_matrix
 import gurobipy as gp
 from gurobipy import GRB
 from itertools import combinations, permutations
-
+import matplotlib.pyplot as plt
 
 # Given n points and k, uses semi-definite programming to produce a solution
 # to the (relaxed) k-means clustering problem.
@@ -228,7 +228,7 @@ def polygon_dual(n):
 
     return a.value, b.value, [d[i].value for i in range(n)]
 
-
+'''
 n = 12
 a, b, d = polygon_dual(n)
 print('alpha:', np.round(a, 3))
@@ -237,7 +237,7 @@ print(np.round(b, 3))
 for i in range(n):
     print(f'delta[{i}]:')
     print(np.round(d[i], 3))
-
+'''
 
 # for e in range(4, 10):
 #     n = 2 ** e
@@ -250,3 +250,12 @@ for i in range(n):
     # print(f'ratio for {n}:', optimal_polygon(n, 1, 3) / sdp_k_means(points, 3, psd=False, tri=True)[1])
     # print(f'optimal LP solution for n={n}:', sdp_k_means(points, 3, psd=False)[1])
     # print(f'constructed LP solution for n={n}:', construct_lp(points, 3))
+
+def make_heatmap(arr): #take in a n x n numpy array and creates a heapmap
+    plt.imshow(arr, cmap='coolwarm', interpolation='nearest')
+    plt.colorbar()
+    plt.title('Heatmap')
+    plt.show()
+
+data = np.random.uniform(0, 100, (50, 50))
+make_heatmap(data)
