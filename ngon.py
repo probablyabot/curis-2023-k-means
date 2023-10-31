@@ -2,13 +2,13 @@ import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+# function to generate a n-gon
 def gen_polygon(n, r=1, cx=0, cy=0):
     t = 2 * np.pi / n
     pts = [[r*np.cos(t*i), r*np.sin(t*i)] for i in range(n)]
     return (cx, cy) + np.array(pts)
 
-
+# creates the dual
 def ngon_dual(n):
     pts = gen_polygon(n, n / (2 * np.pi))
 
