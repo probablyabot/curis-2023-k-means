@@ -251,11 +251,25 @@ for i in range(n):
     # print(f'optimal LP solution for n={n}:', sdp_k_means(points, 3, psd=False)[1])
     # print(f'constructed LP solution for n={n}:', construct_lp(points, 3))
 
-def make_heatmap(arr): #take in a n x n numpy array and creates a heapmap
+
+# take in a n x n numpy array and creates a heatmap
+def make_heatmap(arr, title='Heatmap'):
     plt.imshow(arr, cmap='coolwarm', interpolation='nearest')
     plt.colorbar()
-    plt.title('Heatmap')
+    plt.title(title)
     plt.show()
 
-data = np.random.uniform(0, 100, (50, 50))
-make_heatmap(data)
+
+n = 20
+a, b, d = polygon_dual(n)
+print('alpha:', np.round(a, 3))
+make_heatmap(b, 'betas')
+avgs = np.zeros((n, n))
+for i in range(1, n - 1):
+    for j in range(1, n - i):
+        total = 0
+        for k in range(n):
+            k1, k2 = sorted([(k+i) % n, (k-j) % n])
+            total += d[k][k1][k2]
+        avgs[i][j] = total / n
+make_heatmap(avgs, 'deltas (averaged)')
