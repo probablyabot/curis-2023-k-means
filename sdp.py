@@ -257,6 +257,9 @@ def make_heatmap(arr, title='Heatmap'):
     plt.imshow(arr, cmap='coolwarm', interpolation='nearest')
     plt.colorbar()
     plt.title(title)
+    plt.xticks(np.arange(0, n, 2))
+    plt.yticks(np.arange(0, n, 2))
+    plt.gca().invert_yaxis()
     plt.show()
 
 
